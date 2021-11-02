@@ -94,13 +94,13 @@ def setup_training_options(
     assert isinstance(snap, int)
     if snap < 1:
         raise UserError('--snap must be at least 1')
-    args.image_snapshot_ticks = snap
+    args.network_snapshot_ticks = snap
     if isnap is None:
         isnap = snap
     assert isinstance(isnap, int)
     if isnap < 1:
         raise UserError('--isnap must be at least 1')
-    args.network_snapshot_ticks = isnap
+    args.image_snapshot_ticks = isnap
 
     # ---------------------------------------------
     # Training dataset: data, res, mirror, mirrory
