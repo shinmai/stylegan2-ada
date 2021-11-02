@@ -32,6 +32,7 @@ def setup_training_options(
     # General options (not included in desc).
     gpus       = None, # Number of GPUs: <int>, default = 1 gpu
     snap       = None, # Snapshot interval: <int>, default = 50 ticks
+    isnap       = None, # Image snapshot interval: <int>, default = same as Snapshot interval
 
     # Training dataset.
     data       = None, # Training dataset (required): <path>
@@ -94,7 +95,12 @@ def setup_training_options(
     if snap < 1:
         raise UserError('--snap must be at least 1')
     args.image_snapshot_ticks = snap
-    args.network_snapshot_ticks = snap
+    if isnap is None:
+        isnap = snap
+    assert isinstance(isnap, int)
+    if isnap < 1:
+        raise UserError('--isnap must be at least 1')
+    args.network_snapshot_ticks = isnap
 
     # ---------------------------------------------
     # Training dataset: data, res, mirror, mirrory
@@ -594,6 +600,7 @@ def main():
     group.add_argument('--outdir', help='Where to save the results (required)', required=True, metavar='DIR')
     group.add_argument('--gpus', help='Number of GPUs to use (default: 1 gpu)', type=int, metavar='INT')
     group.add_argument('--snap', help='Snapshot interval (default: 50 ticks)', type=int, metavar='INT')
+    group.add_argument('--isnap', help='Snapshot interval for images (default: same as Snapshot interval)', type=int, metavar='INT')
     group.add_argument('--seed', help='Random seed (default: %(default)s)', type=int, default=1000, metavar='INT')
     group.add_argument('-n', '--dry-run', help='Print training options and exit', action='store_true', default=False)
 
