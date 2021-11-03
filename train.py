@@ -21,6 +21,17 @@ from training import training_loop
 from training import dataset
 from metrics import metric_defaults
 
+import pickle
+import glob
+
+def locate_latest_pkl(result_dir):
+    allpickles = sorted(glob.glob(os.path.join(result_dir, '0*', 'network-*.pkl')))
+    latest_pickle = allpickles[-1]
+    resume_run_id = os.path.basename(os.path.dirname(latest_pickle))
+    RE_KIMG = re.compile('network-snapshot-(\d+).pkl')
+    kimg = int(RE_KIMG.match(os.path.basename(latest_pickle)).group(1))
+    return str(result_dir) + '/' + str(resume_run_id) + "/network-snapshot-" + str(kimg).rjust(6, '0') + ".pkl"
+
 #----------------------------------------------------------------------------
 
 class UserError(Exception):
@@ -68,6 +79,9 @@ def setup_training_options(
     # Transfer learning.
     resume     = None, # Load previous network: 'noresume' (default), 'ffhq256', 'ffhq512', 'ffhq1024', 'celebahq256', 'lsundog256', <file>, <url>
     freezed    = None, # Freeze-D: <int>, default = 0 discriminator layers
+    aresume    = None, # try to autoresume
+    outdir     = None, 
+    
 ):
     # Initialize dicts.
     args = dnnlib.EasyDict()
@@ -459,22 +473,26 @@ def setup_training_options(
         'cifar10':      'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada/pretrained/cifar10.pkl',
         'metfaces':     'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada/pretrained/metfaces.pkl',
     }
+    
+    if aresume is None:
+        assert resume is None or isinstance(resume, str)
+        if resume is None:
+            resume = 'noresume'
+        elif resume == 'noresume':
+            desc += '-noresume'
+        elif resume in resume_specs:
+            desc += f'-resume{resume}'
+            args.resume_pkl = resume_specs[resume] # predefined url
+        else:
+            desc += '-resumecustom'
+            args.resume_pkl = resume # custom path or url
 
-    assert resume is None or isinstance(resume, str)
-    if resume is None:
-        resume = 'noresume'
-    elif resume == 'noresume':
-        desc += '-noresume'
-    elif resume in resume_specs:
-        desc += f'-resume{resume}'
-        args.resume_pkl = resume_specs[resume] # predefined url
+        if resume != 'noresume':
+            args.augment_args.tune_kimg = 100 # make ADA react faster at the beginning
+            args.G_smoothing_rampup = None # disable EMA rampup
     else:
-        desc += '-resumecustom'
-        args.resume_pkl = resume # custom path or url
-
-    if resume != 'noresume':
-        args.augment_args.tune_kimg = 100 # make ADA react faster at the beginning
-        args.G_smoothing_rampup = None # disable EMA rampup
+        desc += '-autoresume'
+        args.resume_pkl = locate_latest_pkl(outdir)
 
     if freezed is not None:
         assert isinstance(freezed, int)
@@ -638,7 +656,8 @@ def main():
     group = parser.add_argument_group('transfer learning')
     group.add_argument('--resume',  help='Resume from network pickle (default: noresume)')
     group.add_argument('--freezed', help='Freeze-D (default: 0 discriminator layers)', type=int, metavar='INT')
-
+    group.add_argument('--aresume',  help='Attempt to autoresume')
+    
     args = parser.parse_args()
     try:
         run_training(**vars(args))
