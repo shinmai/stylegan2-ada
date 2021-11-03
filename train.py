@@ -508,7 +508,7 @@ def setup_training_options(
 def run_training(outdir, seed, dry_run, **hyperparam_options):
     # Setup training options.
     tflib.init_tf({'rnd.np_random_seed': seed})
-    run_desc, training_options = setup_training_options(**hyperparam_options, outdir)
+    run_desc, training_options = setup_training_options(**hyperparam_options, outdir=outdir)
 
     # Pick output directory.
     prev_run_dirs = []
