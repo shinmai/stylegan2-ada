@@ -32,6 +32,14 @@ def locate_latest_pkl(result_dir):
     kimg = int(RE_KIMG.match(os.path.basename(latest_pickle)).group(1))
     return str(result_dir) + '/' + str(resume_run_id) + "/network-snapshot-" + str(kimg).rjust(6, '0') + ".pkl"
 
+def latest_pkl_kimg(result_dir):
+    allpickles = sorted(glob.glob(os.path.join(result_dir, '0*', 'network-*.pkl')))
+    latest_pickle = allpickles[-1]
+    resume_run_id = os.path.basename(os.path.dirname(latest_pickle))
+    RE_KIMG = re.compile('network-snapshot-(\d+).pkl')
+    kimg = int(RE_KIMG.match(os.path.basename(latest_pickle)).group(1))
+    return kimg
+
 #----------------------------------------------------------------------------
 
 class UserError(Exception):
@@ -493,6 +501,7 @@ def setup_training_options(
     else:
         desc += '-autoresume'
         args.resume_pkl = locate_latest_pkl(outdir)
+        args.nkimg = latest_pkl_kimg(outdir)
 
     if freezed is not None:
         assert isinstance(freezed, int)
