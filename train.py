@@ -501,7 +501,7 @@ def setup_training_options(
     else:
         desc += '-autoresume'
         args.resume_pkl = locate_latest_pkl(outdir)
-        args.nkimg = latest_pkl_kimg(outdir)
+        args.nimg = latest_pkl_kimg(outdir) * 1000
 
     if freezed is not None:
         assert isinstance(freezed, int)
